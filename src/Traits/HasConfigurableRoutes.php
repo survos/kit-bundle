@@ -11,7 +11,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
- * Adds standardised route auto-registration to a SurvosBundle subclass.
+ * Adds standardised route auto-registration to an AbstractSurvosBundle subclass.
  *
  * Exposes two app-developer config keys:
  *   routes_enabled  — toggle the bundle's route registration (default true)

@@ -25,20 +25,20 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  *
  * Typical bundle:
  *
- *     #[RequireBundle(SurvosKitBundle::class)]
- *     class SurvosMyBundle extends SurvosBundle
+ *     #[RequiredBundle(SurvosKitBundle::class)]
+ *     class SurvosMyBundle extends AbstractSurvosBundle
  *     {
  *         use HasDoctrineEntities;
  *         use HasConfigurableRoutes;
  *
- *         protected function entityNamespace(): string { return 'Survos\\MyBundle\\Entity'; }
+ *         // Override entityNamespace() only when entities are not in src/Entity.
  *     }
  */
-abstract class SurvosBundle extends AbstractBundle
+abstract class AbstractSurvosBundle extends AbstractBundle
 {
     /**
      * Twig namespace for templates/.
-     * ''    → auto-derive: SurvosClaimsBundle → 'SurvosClaims'
+     * ''    → auto-derive: SurvosMyBundle → 'SurvosMy'
      * null  → skip
      * 'Foo' → explicit
      */

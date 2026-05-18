@@ -9,20 +9,17 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 /**
  * Auto-registers a bundle's src/Entity/ directory with Doctrine ORM.
  *
- * Mix this into any SurvosBundle subclass that owns Doctrine entities.
- * SurvosBundle::prependExtension() detects the trait and calls
+ * Mix this into any AbstractSurvosBundle subclass that owns Doctrine entities.
+ * AbstractSurvosBundle::prependExtension() detects the trait and calls
  * prependDoctrineMapping() automatically — no manual wiring needed.
  *
  * Usage:
  *
- *     class SurvosMyBundle extends SurvosBundle
+ *     class SurvosMyBundle extends AbstractSurvosBundle
  *     {
  *         use HasDoctrineEntities;
  *
- *         protected function entityNamespace(): string
- *         {
- *             return 'Survos\\MyBundle\\Entity';
- *         }
+ *         // Override entityNamespace() only when entities are not in src/Entity.
  *     }
  *
  * Override doctrineAlias() when the default (class name minus 'Bundle') is wrong.
@@ -30,7 +27,10 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  */
 trait HasDoctrineEntities
 {
-    abstract protected function entityNamespace(): string;
+    protected function entityNamespace(): string
+    {
+        return (new \ReflectionClass($this))->getNamespaceName() . '\\Entity';
+    }
 
     protected function doctrineAlias(): string
     {
