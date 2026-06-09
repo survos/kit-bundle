@@ -59,8 +59,16 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     }
 
     /**
-     * Auto-scans src/Command/ and src/Controller/ so commands and controllers
-     * are registered without listing each class explicitly.
+     * Auto-scans conventional src/ directories so their classes are registered
+     * without listing each one explicitly. Registration is autoconfigured, so
+     * attribute-tagged classes (#[AsCommand], #[AsTwigComponent], …) wire up on
+     * their own — drop a class in the directory and it just works.
+     *
+     *   src/Command/         → console commands
+     *   src/Controller/      → controllers
+     *   src/Twig/Components/  → Twig/Live components (only when ux-twig-component
+     *                          is installed; the files import its attribute)
+     *
      * Subclasses that override loadExtension() must call parent::loadExtension().
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
@@ -68,12 +76,21 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         $namespace = (new \ReflectionClass($this))->getNamespaceName() . '\\';
         $srcDir    = $this->getPath() . '/src/';
 
-        foreach (['Command', 'Controller'] as $dir) {
-            $fullDir = $srcDir . $dir . '/';
+        // path under src/  =>  namespace suffix
+        $autoScan = [
+            'Command'    => 'Command\\',
+            'Controller' => 'Controller\\',
+        ];
+        if (class_exists(\Symfony\UX\TwigComponent\Attribute\AsTwigComponent::class)) {
+            $autoScan['Twig/Components'] = 'Twig\\Components\\';
+        }
+
+        foreach ($autoScan as $path => $nsSuffix) {
+            $fullDir = $srcDir . $path . '/';
             if (\is_dir($fullDir)) {
                 $container->services()
                     ->defaults()->autowire()->autoconfigure()
-                    ->load($namespace . $dir . '\\', $fullDir);
+                    ->load($namespace . $nsSuffix, $fullDir);
             }
         }
     }
