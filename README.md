@@ -168,6 +168,64 @@ final class SurvosIiifBundle extends AbstractUxBundle
 }
 ```
 
+#### Troubleshooting: a UX controller never loads in the browser
+
+Symptom: a `<twig:…>` component renders `data-controller="survos--foo--bar"`, but the
+controller never connects — empty console, no error. This bites every time we add a new UX
+bundle or symlink one for local dev. There are **three independent causes**, and you can hit
+all of them at once. Check them in this order:
+
+**1. Stale compiled `public/assets/` shadows your changes (the silent one).**
+If `public/assets/` exists (left over from a `php bin/console asset-map:compile`), the dev
+server serves those frozen files instead of compiling on the fly. Your `controllers.json`,
+`package.json`, and controller-source edits have **zero effect** and the compiled
+`controllers.js` digest never changes — the tell-tale sign. Fix in dev:
+
+```bash
+rm -rf public/assets var/cache/dev
+```
+
+In prod, re-run `asset-map:compile` after the bundle changes instead. (Never leave a compiled
+`public/assets/` checked in or sitting in a dev checkout.)
+
+**2. The `controllers.json` key must be the Composer package name, `@`-prefixed.**
+`@symfony/stimulus-bundle`'s `UxPackageReader` resolves the key via
+`Composer\InstalledVersions::isInstalled(substr($key, 1))`. So the app's
+`assets/controllers.json` key must be `@survos/iiif-bundle` (the **composer** name
+`survos/iiif-bundle`), **not** `@survos/iiif` (the npm/asset name). The wrong key throws
+`Could not find package "survos/iiif" referred to from controllers.json`.
+
+**3. The Stimulus identifier comes from the per-controller `"name"` in the bundle's
+`assets/package.json` — not from the key or the npm name.**
+`ControllersMapGenerator` builds the identifier from `symfony.controllers.<id>.name`
+(slashes → `--`). Without a `name`, it falls back to `<composer-key>/<controller>`, e.g.
+`survos--iiif-bundle--iiif-diva` — which will **not** match a component that references
+`@survos/iiif/iiif-diva` (→ `survos--iiif--iiif-diva`). Always set an explicit `name`:
+
+```jsonc
+// <bundle>/assets/package.json
+{
+  "name": "@survos/iiif",
+  "symfony": {
+    "controllers": {
+      "iiif-diva": {
+        "name": "survos/iiif/iiif-diva",          // → identifier survos--iiif--iiif-diva
+        "main": "controllers/diva_viewer_controller.js",
+        "enabled": true,
+        "fetch": "lazy"
+      }
+    }
+  }
+}
+```
+
+Verify the end result without a browser — the compiled map should list your controller:
+
+```bash
+curl -s "$APP_URL/assets/@symfony/stimulus-bundle/controllers.js" | grep your-controller
+# → "survos--iiif--iiif-diva": () => import("../../@survos/iiif/controllers/diva_viewer_controller.js")
+```
+
 ### Overriding Conventions
 
 Override `twigNamespace()` to customise or disable Twig path registration:
