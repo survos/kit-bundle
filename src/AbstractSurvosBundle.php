@@ -7,7 +7,7 @@ namespace Survos\Kit;
 use Symfony\Component\AssetMapper\AssetMapperInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
 
 /**
  * Base class for Survos bundles. Extend this instead of AbstractBundle.
@@ -74,7 +74,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $namespace = (new \ReflectionClass($this))->getNamespaceName() . '\\';
-        $srcDir    = $this->getPath() . '/src/';
+        $srcDir    = $this->bundleRootPath() . '/src/';
 
         // path under src/  =>  namespace suffix
         $autoScan = [
@@ -122,6 +122,21 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         }
     }
 
+    private function bundleRootPath(): string
+    {
+        $path = $this->getPath();
+        if (is_dir($path . '/src')) {
+            return $path;
+        }
+
+        $classFile = (new \ReflectionClass($this))->getFileName();
+        if (false !== $classFile && basename(dirname($classFile)) === 'src') {
+            return dirname(dirname($classFile));
+        }
+
+        return $path;
+    }
+
     private function prependTwig(ContainerBuilder $builder): void
     {
         $ns = $this->twigNamespace();
@@ -134,7 +149,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             $ns = preg_replace('/Bundle$/', '', $shortName) ?? $shortName;
         }
 
-        $dir = $this->getPath() . '/templates';
+        $dir = $this->bundleRootPath() . '/templates';
         if (!is_dir($dir)) {
             return;
         }
@@ -157,7 +172,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             $ns = $this->deriveAssetNamespace();
         }
 
-        $dir = realpath($this->getPath() . '/assets');
+        $dir = realpath($this->bundleRootPath() . '/assets');
         if (!$dir) {
             return;
         }
