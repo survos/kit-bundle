@@ -136,7 +136,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         }
     }
 
-    private function bundleRootPath(): string
+    protected function bundleRootPath(): string
     {
         $path = $this->getPath();
         if (is_dir($path . '/src')) {
@@ -196,7 +196,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         ]);
     }
 
-    private function deriveAssetNamespace(): string
+    protected function deriveAssetNamespace(): string
     {
         if (defined('static::ASSET_PACKAGE')) {
             $package = (string) constant('static::ASSET_PACKAGE');
@@ -208,9 +208,13 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             return '@survos/' . trim($package, '/');
         }
 
+        // Keep the "Bundle" suffix: the asset namespace must equal the composer
+        // package name ("@survos/iiif-bundle"), because Symfony UX resolves a
+        // controllers.json key by stripping "@" and locating that composer package
+        // (UxPackageReader::readPackageMetadata). Stripping "Bundle" here produced
+        // "@survos/iiif", which has no composer package and can't be resolved.
         $shortName = (new \ReflectionClass($this))->getShortName();
         $shortName = preg_replace('/^Survos/', '', $shortName) ?? $shortName;
-        $shortName = preg_replace('/Bundle$/', '', $shortName) ?? $shortName;
         $slug      = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $shortName));
 
         return '@survos/' . $slug;
