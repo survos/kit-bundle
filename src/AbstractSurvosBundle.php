@@ -23,9 +23,23 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  * AbstractBundle::getPath() returns the bundle root (parent of src/), so all
  * path helpers use $this->getPath() — no more dirname(__DIR__) in bundle classes.
  *
+ * REQUIRED Flex marker: every concrete bundle that extends this base MUST carry the
+ * literal-text comment shown in the example below, immediately above the class
+ * declaration. Symfony Flex auto-registers a `type: symfony-bundle` package in
+ * config/bundles.php only when the concrete class file contains the literal string
+ * "Symfony\Component\HttpKernel\Bundle\Bundle" or "...\AbstractBundle" — a raw
+ * str_contains() on the file bytes, with no autoloading or reflection (see
+ * vendor/symfony/flex/src/SymfonyBundle.php::isBundleClass()). Because our bundles
+ * extend an intermediate base (and ultimately
+ * Symfony\Component\DependencyInjection\Kernel\AbstractBundle, which Flex does not look
+ * for), that string is otherwise absent and registration silently fails: `composer req`
+ * installs the package but never adds it to config/bundles.php. The comment supplies the
+ * bytes Flex greps for. Per-bundle markers are kept to a single line that points back here.
+ *
  * Typical bundle:
  *
  *     #[RequiredBundle(SurvosKitBundle::class)]
+ *     // Symfony\Component\HttpKernel\Bundle\Bundle <-- Flex auto-registration marker (see Survos\Kit\AbstractSurvosBundle)
  *     class SurvosMyBundle extends AbstractSurvosBundle
  *     {
  *         use HasDoctrineEntities;
