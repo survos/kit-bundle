@@ -32,11 +32,12 @@ trait HasConfigurableRoutes
     private bool   $routesEnabled = true;
     private string $routePrefix   = '';
 
-    protected function addRouteOptions(NodeBuilder $children, string $defaultPrefix): void
+    protected function addRouteOptions(NodeBuilder $children, string $defaultPrefix, bool $defaultEnabled = true): void
     {
         $children
-            ->booleanNode('routes_enabled')->defaultTrue()
-                ->info('Set false to manage this bundle\'s routes manually in your app.')
+            ->booleanNode('routes_enabled')->defaultValue($defaultEnabled)
+                ->info('Set false to manage this bundle\'s routes manually in your app. '
+                    . 'Bundles exposing sensitive routes (e.g. running console commands) should default this off.')
             ->end()
             ->scalarNode('route_prefix')->defaultValue($defaultPrefix)
                 ->info('URL prefix applied to all routes from this bundle.')
