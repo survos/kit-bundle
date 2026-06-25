@@ -94,6 +94,11 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         $autoScan = [
             'Command'    => 'Command\\',
             'Controller' => 'Controller\\',
+            // NOTE: src/Menu is intentionally NOT auto-scanned — some menu subscribers are
+            // conditionally registered (e.g. CommandBundleMenuSubscriber only when routes_enabled,
+            // since it links to a route that otherwise doesn't exist). Auto-scanning them
+            // unconditionally breaks those guards. Register menu subscribers explicitly in each
+            // bundle's loadExtension(). (TODO: revisit once subscribers self-guard on route existence.)
         ];
         if (class_exists(\Symfony\UX\TwigComponent\Attribute\AsTwigComponent::class)) {
             $autoScan['Twig/Components'] = 'Twig\\Components\\';
