@@ -168,6 +168,32 @@ final class SurvosIiifBundle extends AbstractUxBundle
 }
 ```
 
+### Compiler pass registration on Symfony 8.1+
+
+Symfony 8.1 automatically registers bundles that implement `CompilerPassInterface`, but it
+does so at `PassConfig::TYPE_BEFORE_OPTIMIZATION` with priority `-10000`. That is later than
+Survos bundle passes historically ran, and it is too late for passes that prepare service
+definitions or Twig globals consumed during compilation/rendering.
+
+Do not remove explicit compiler-pass registration just because the bundle implements
+`CompilerPassInterface`. Register it deliberately:
+
+```php
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
+
+public function build(ContainerBuilder $container): void
+{
+    parent::build($container);
+    $container->addCompilerPass($this, PassConfig::TYPE_BEFORE_OPTIMIZATION);
+}
+```
+
+`AbstractUxBundle` already does this for UX bundles. Child UX bundles should call
+`parent::build()` and add only their extra build-time work, such as route-loader
+compiler passes. Non-UX bundles that implement `CompilerPassInterface` should register
+themselves explicitly with `PassConfig::TYPE_BEFORE_OPTIMIZATION` unless their pass is truly
+safe to run at Symfony's late auto-registration priority.
+
 #### Troubleshooting: a UX controller never loads in the browser
 
 Symptom: a `<twig:…>` component renders `data-controller="survos--foo--bar"`, but the

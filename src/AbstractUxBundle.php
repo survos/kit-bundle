@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Survos\Kit;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 /**
@@ -21,7 +22,11 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
-        $container->addCompilerPass($this);
+
+        // Keep explicit registration even on Symfony 8.1: the framework
+        // auto-registers bundle compiler passes at priority -10000, which is
+        // too late for passes that prepare service definitions or Twig globals.
+        $container->addCompilerPass($this, PassConfig::TYPE_BEFORE_OPTIMIZATION);
 
         // Publish this bundle's controllers into the shared registry so the
         // survos_stimulus() Twig helper can validate references against what's
