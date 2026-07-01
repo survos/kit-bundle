@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Survos\Kit;
 
+use Survos\Kit\Compiler\BangTwigNamespacePass;
 use Symfony\Component\AssetMapper\AssetMapperInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -115,6 +116,24 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     }
 
     /**
+     * Registers the "!"-prefixed bang-bypass Twig namespace (see BangTwigNamespacePass)
+     * when twigNamespace() sets an explicit namespace. Subclasses that override
+     * build() (e.g. AbstractUxBundle) must call parent::build($container).
+     */
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        $ns = $this->twigNamespace();
+        if ($ns !== null && $ns !== '') {
+            $dir = $this->bundleRootPath() . '/templates';
+            if (is_dir($dir)) {
+                $container->addCompilerPass(new BangTwigNamespacePass($ns, $dir));
+            }
+        }
+    }
+
+    /**
      * Registers twig paths, AssetMapper paths, and — when HasDoctrineEntities is
      * mixed in — Doctrine ORM mappings. Subclasses that need additional prepends
      * should call parent::prependExtension() first.
@@ -158,22 +177,43 @@ abstract class AbstractSurvosBundle extends AbstractBundle
 
     private function prependTwig(ContainerBuilder $builder): void
     {
-        $ns = $this->twigNamespace();
-        if ($ns === null) {
+        $rawNs = $this->twigNamespace();
+        if ($rawNs === null) {
             return;
         }
 
-        if ($ns === '') {
-            $shortName = (new \ReflectionClass($this))->getShortName();
-            $ns = preg_replace('/Bundle$/', '', $shortName) ?? $shortName;
-        }
+        $shortName = (new \ReflectionClass($this))->getShortName();
+        $isExplicit = $rawNs !== '';
+        $ns = $isExplicit ? $rawNs : (preg_replace('/Bundle$/', '', $shortName) ?? $shortName);
 
         $dir = $this->bundleRootPath() . '/templates';
         if (!is_dir($dir)) {
             return;
         }
 
-        $builder->prependExtensionConfig('twig', ['paths' => [$dir => $ns]]);
+        $paths = [$dir => $ns];
+
+        // Symfony auto-registers app-override support for its OWN derived namespace
+        // (strip "Bundle" from the short class name) via kernel.bundles_metadata —
+        // entirely independent of this method. A bundle that sets an explicit
+        // twigNamespace() (keeping the "Bundle" suffix, say) sidesteps that
+        // derivation and loses override support: templates/bundles/{ShortName}/ is
+        // never consulted, so app skin templates placed there silently never
+        // render. Replicate it here for the explicit-namespace case only — the
+        // default ('') case is already covered by Symfony's own mechanism, so
+        // adding it again there would just be a harmless but pointless duplicate.
+        // The matching "!"-prefixed bypass namespace (for `{% extends '@!Name/...' %}`
+        // from inside the override) needs a compiler pass — see build() below —
+        // because it requires the SAME dir under a SECOND namespace, which the
+        // "twig.paths" config node can't express (one namespace per path).
+        if ($isExplicit && $builder->hasParameter('kernel.project_dir')) {
+            $overrideDir = $builder->getParameter('kernel.project_dir') . '/templates/bundles/' . $shortName;
+            if (is_dir($overrideDir)) {
+                $paths = [$overrideDir => $ns] + $paths;
+            }
+        }
+
+        $builder->prependExtensionConfig('twig', ['paths' => $paths]);
     }
 
     private function prependAssets(ContainerBuilder $builder): void
