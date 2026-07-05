@@ -29,10 +29,11 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 trait HasConfigurableRoutes
 {
-    private bool   $routesEnabled = true;
-    private string $routePrefix   = '';
+    private bool   $routesEnabled  = true;
+    private string $routePrefix    = '';
+    private bool   $localePrefixed = false;
 
-    protected function addRouteOptions(NodeBuilder $children, string $defaultPrefix, bool $defaultEnabled = true): void
+    protected function addRouteOptions(NodeBuilder $children, string $defaultPrefix, bool $defaultEnabled = true, bool $localePrefixDefault = false): void
     {
         $children
             ->booleanNode('routes_enabled')->defaultValue($defaultEnabled)
@@ -42,13 +43,19 @@ trait HasConfigurableRoutes
             ->scalarNode('route_prefix')->defaultValue($defaultPrefix)
                 ->info('URL prefix applied to all routes from this bundle.')
             ->end()
+            ->booleanNode('locale_prefix')->defaultValue($localePrefixDefault)
+                ->info('Prepend {_locale} (constrained to kernel.enabled_locales) to this bundle\'s route '
+                    . 'prefix, e.g. /{_locale}/f instead of /f -- for bundles whose routes are meant to be '
+                    . 'shared/bookmarked, so the URL itself carries the locale instead of a query param.')
+            ->end()
         ;
     }
 
     protected function captureRouteConfig(array $config): void
     {
-        $this->routesEnabled = (bool) ($config['routes_enabled'] ?? true);
-        $this->routePrefix   = (string) ($config['route_prefix'] ?? '');
+        $this->routesEnabled  = (bool) ($config['routes_enabled'] ?? true);
+        $this->routePrefix    = (string) ($config['route_prefix'] ?? '');
+        $this->localePrefixed = (bool) ($config['locale_prefix'] ?? false);
     }
 
     protected function registerRouteLoader(ContainerBuilder $builder): void
@@ -67,6 +74,9 @@ trait HasConfigurableRoutes
             ->setArgument('$controllerDir',            $controllerDir)
             ->setArgument('$routePrefix',              $this->routePrefix)
             ->setArgument('$attributeDirectoryLoader', new Reference('routing.loader.attribute.directory'))
+            ->setArgument('$localePrefixed',           $this->localePrefixed)
+            ->setArgument('$enabledLocales',           '%kernel.enabled_locales%')
+            ->setArgument('$defaultLocale',             '%kernel.default_locale%')
             ->addTag('routing.route_loader');
     }
 
