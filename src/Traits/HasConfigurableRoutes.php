@@ -7,6 +7,7 @@ namespace Survos\Kit\Traits;
 use Survos\Kit\Compiler\BundleRouteLoaderCompilerPass;
 use Survos\Kit\Routing\BundleRouteLoader;
 use Symfony\Component\Config\Definition\Builder\NodeBuilder;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -82,12 +83,28 @@ trait HasConfigurableRoutes
 
     protected function addRouteLoaderCompilerPass(ContainerBuilder $container): void
     {
-        $container->addCompilerPass(new BundleRouteLoaderCompilerPass($this->routeLoaderServiceId()));
+        // Priority 64 (> 0) so this runs before framework-bundle's
+        // RoutingControllerPass (registered at the TYPE_BEFORE_OPTIMIZATION
+        // default priority 0) — otherwise a routes_enabled:false bundle's
+        // controllers would already have been swept into the
+        // routing.controllers auto-discovery list by the time we try to
+        // exclude them. See BundleRouteLoaderCompilerPass for why this
+        // second discovery path exists at all.
+        $container->addCompilerPass(
+            new BundleRouteLoaderCompilerPass($this->routeLoaderServiceId(), $this->controllerNamespace()),
+            PassConfig::TYPE_BEFORE_OPTIMIZATION,
+            64,
+        );
     }
 
     protected function controllerDirectory(): string
     {
         return \dirname((new \ReflectionClass($this))->getFileName()) . '/Controller/';
+    }
+
+    protected function controllerNamespace(): string
+    {
+        return (new \ReflectionClass($this))->getNamespaceName() . '\\Controller\\';
     }
 
     protected function routeLoaderServiceId(): string

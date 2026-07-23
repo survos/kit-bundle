@@ -14,14 +14,30 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  * The pass reads the current router.resource value, sets it as the loader's
  * $originalResource, then replaces router.resource with the bundle's loader id.
  * Multiple bundles stack cleanly — each captures what the previous set.
+ *
+ * When the bundle's loader was never registered (routes_enabled: false, or no
+ * Controller/ dir), this pass instead strips the `routing.controller` /
+ * `controller.service_arguments` tags from the bundle's own controller
+ * services. Those tags are what Symfony's generic `routing.controllers`
+ * special resource (`resource: routing.controllers` in an app's routes.yaml,
+ * consumed by RoutingControllerPass/AttributeServicesLoader) uses to
+ * independently rediscover #[Route] attributes project-wide — a second,
+ * separate discovery path that otherwise bypasses routes_enabled entirely.
+ * Must run BEFORE RoutingControllerPass (framework-bundle, priority 0), see
+ * the explicit priority passed in HasConfigurableRoutes::addRouteLoaderCompilerPass().
  */
 final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
 {
-    public function __construct(private readonly string $loaderServiceId) {}
+    public function __construct(
+        private readonly string $loaderServiceId,
+        private readonly string $controllerNamespace,
+    ) {}
 
     public function process(ContainerBuilder $container): void
     {
         if (!$container->hasDefinition($this->loaderServiceId)) {
+            $this->stripRoutingTags($container);
+
             return;
         }
 
@@ -40,5 +56,18 @@ final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
             ->setArgument('$originalResource', $originalResource);
 
         $container->setParameter('router.resource', $this->loaderServiceId);
+    }
+
+    private function stripRoutingTags(ContainerBuilder $container): void
+    {
+        foreach ($container->getDefinitions() as $id => $definition) {
+            $class = $definition->getClass() ?? $id;
+            if (!\is_string($class) || !\str_starts_with($class, $this->controllerNamespace)) {
+                continue;
+            }
+
+            $definition->clearTag('routing.controller');
+            $definition->clearTag('controller.service_arguments');
+        }
     }
 }
