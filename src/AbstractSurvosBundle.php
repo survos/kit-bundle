@@ -53,13 +53,11 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  *         // Override entityNamespace() only when entities are not in src/Entity.
  *     }
  *
- * The @method lines below are for static analysis only: these live in
- * HasConfigurableRoutes and exist exactly when a subclass mixes it in, which is
- * what hasConfigurableRoutes() guards every call site on.
- *
- * @method void captureRouteConfig(array $config)
- * @method void registerRouteLoader(ContainerBuilder $builder)
- * @method void addRouteLoaderCompilerPass(ContainerBuilder $container)
+ * Configurable-route methods live in HasConfigurableRoutes and exist exactly
+ * when a subclass mixes it in, which is what hasConfigurableRoutes() guards at
+ * every call site. Do not advertise them with @method annotations here:
+ * Symfony's DebugClassLoader treats inherited magic methods as APIs that each
+ * concrete bundle should implement and emits false-positive deprecations.
  */
 abstract class AbstractSurvosBundle extends AbstractBundle
 {
