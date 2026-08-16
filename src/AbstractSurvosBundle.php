@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Survos\Kit;
 
 use Survos\Kit\Compiler\BangTwigNamespacePass;
+use Survos\Kit\Routing\ConfigurableRoutesInterface;
+use Survos\Kit\Traits\HasConfigurableRoutes;
 use Symfony\Component\AssetMapper\AssetMapperInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -19,7 +21,9 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  *   assets/        → registered with AssetMapper via assetNamespace() / ASSET_PACKAGE const
  *   src/Entity/    → Doctrine ORM mapping registered when HasDoctrineEntities is mixed in
  *   src/Command/   → all commands auto-registered (parent::loadExtension() scans the dir)
- *   src/Controller/→ controllers auto-registered; routes loaded via HasConfigurableRoutes
+ *   src/Controller/→ controllers auto-registered; routes fully wired when
+ *                    HasConfigurableRoutes is mixed in — the bundle only declares its
+ *                    default prefix in configure(), see wireConfigurableRoutes()
  *
  * AbstractBundle::getPath() returns the bundle root (parent of src/), so all
  * path helpers use $this->getPath() — no more dirname(__DIR__) in bundle classes.
@@ -48,6 +52,14 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  *
  *         // Override entityNamespace() only when entities are not in src/Entity.
  *     }
+ *
+ * The @method lines below are for static analysis only: these live in
+ * HasConfigurableRoutes and exist exactly when a subclass mixes it in, which is
+ * what hasConfigurableRoutes() guards every call site on.
+ *
+ * @method void captureRouteConfig(array $config)
+ * @method void registerRouteLoader(ContainerBuilder $builder)
+ * @method void addRouteLoaderCompilerPass(ContainerBuilder $container)
  */
 abstract class AbstractSurvosBundle extends AbstractBundle
 {
@@ -113,6 +125,107 @@ abstract class AbstractSurvosBundle extends AbstractBundle
                     ->load($namespace . $nsSuffix, $fullDir);
             }
         }
+
+        $this->wireConfigurableRoutes($config, $builder);
+    }
+
+    /**
+     * Drives the mechanical half of HasConfigurableRoutes.
+     *
+     * The trait used to require the bundle to call four of the trait's own
+     * methods, spread across configure(), loadExtension() and build(). Steps
+     * 2-4 take no bundle-specific decision, so they are done here instead;
+     * omitting one of them used to produce a bundle with no routes and no
+     * error anywhere (survos/mono#43). Bundles that still call them by hand are
+     * unaffected — each step is idempotent.
+     *
+     * Step 1 (addRouteOptions, in configure()) stays with the bundle: the
+     * default prefix is a real decision and cannot be guessed. Skipping it is
+     * therefore checked rather than automated.
+     */
+    private function wireConfigurableRoutes(array $config, ContainerBuilder $builder): void
+    {
+        if (!$this->hasConfigurableRoutes()) {
+            return;
+        }
+
+        if ($builder->hasParameter('kernel.debug') && $builder->getParameter('kernel.debug')) {
+            $this->assertRouteOptionsDeclared($config);
+        }
+
+        $this->captureRouteConfig($config);
+        $this->registerRouteLoader($builder);
+    }
+
+    /**
+     * A bundle that mixes in HasConfigurableRoutes but never calls
+     * addRouteOptions() has no routes_enabled / route_prefix / locale_prefix
+     * nodes, so every one of them falls back to its hardcoded default: the
+     * prefix is always '' and the app has no way to switch the routes off. That
+     * is silent — the routes still load, just uncontrollably — which is why it
+     * survived unnoticed in survos/iiif-bundle, a bundle exposing a debug
+     * controller that ought to be switchable.
+     *
+     * A bundle that declares the nodes by hand instead of via addRouteOptions()
+     * passes: the check is for the resulting config, not the call.
+     */
+    private function assertRouteOptionsDeclared(array $config): void
+    {
+        $missing = array_values(array_diff(['routes_enabled', 'route_prefix'], array_keys($config)));
+        if ([] === $missing) {
+            return;
+        }
+
+        throw new \LogicException(sprintf(
+            '%s uses HasConfigurableRoutes but its resolved config has no %s key. '
+            . 'Declare the route options in configure(), so apps can set the prefix and '
+            . 'switch the routes off: '
+            . '$this->addRouteOptions($definition->rootNode()->children(), \'/your-prefix\'); '
+            . 'Without it the prefix is always empty and routes_enabled: false does nothing.',
+            static::class,
+            implode(' or ', $missing),
+        ));
+    }
+
+    /**
+     * Accepts either the declared interface or the bare trait.
+     *
+     * A PHP trait cannot implement an interface on its using class's behalf, so
+     * requiring `implements ConfigurableRoutesInterface` would split the opt-in
+     * into two steps a bundle could do half of — reintroducing exactly the class
+     * of bug this is fixing. `use HasConfigurableRoutes;` is therefore accepted
+     * on its own, and the interface is the preferred, statically analysable
+     * spelling that bundles can adopt at their own pace.
+     */
+    private function hasConfigurableRoutes(): bool
+    {
+        if ($this instanceof ConfigurableRoutesInterface) {
+            return true;
+        }
+
+        // class_uses() is neither inheritance- nor trait-recursive, and PHP ships
+        // no helper that is, so walk both axes: the parent chain, and traits
+        // composed into other traits.
+        $seen  = [];
+        $queue = [];
+        for ($class = static::class; false !== $class; $class = get_parent_class($class)) {
+            $queue = [...$queue, ...array_values(class_uses($class) ?: [])];
+        }
+
+        while ($queue) {
+            $trait = array_pop($queue);
+            if (isset($seen[$trait])) {
+                continue;
+            }
+            $seen[$trait] = true;
+
+            if (HasConfigurableRoutes::class === $trait) {
+                return true;
+            }
+            $queue = [...$queue, ...array_values(class_uses($trait) ?: [])];
+        }
+
+        return false;
     }
 
     /**
@@ -123,6 +236,12 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
+
+        // Step 4 of the HasConfigurableRoutes contract, see wireConfigurableRoutes().
+        // Idempotent, so bundles still calling it themselves are unaffected.
+        if ($this->hasConfigurableRoutes()) {
+            $this->addRouteLoaderCompilerPass($container);
+        }
 
         $ns = $this->twigNamespace();
         if ($ns !== null && $ns !== '') {

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Survos\Kit;
 
+use Survos\Kit\Compiler\AssertRouteLoadersChainedPass;
 use Survos\Kit\Twig\SurvosStimulusExtension;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\DependencyInjection\Parameter;
@@ -12,6 +14,17 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
 class SurvosKitBundle extends AbstractBundle
 {
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+
+        // Priority 32: below the 64 used by every BundleRouteLoaderCompilerPass, so
+        // all of them have had their chance to clear the marker tag before we look.
+        if ($container->hasParameter('kernel.debug') && $container->getParameter('kernel.debug')) {
+            $container->addCompilerPass(new AssertRouteLoadersChainedPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 32);
+        }
+    }
+
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         // Ensure the registry parameter exists even when no UX bundle is installed.

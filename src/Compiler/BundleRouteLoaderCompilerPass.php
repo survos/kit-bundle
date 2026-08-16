@@ -28,6 +28,13 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  */
 final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
 {
+    /**
+     * Applied by HasConfigurableRoutes::registerRouteLoader(), removed here.
+     * A definition still carrying it after every instance of this pass has run
+     * was never chained into router.resource — see AssertRouteLoadersChainedPass.
+     */
+    public const UNCHAINED_TAG = 'survos_kit.unchained_route_loader';
+
     public function __construct(
         private readonly string $loaderServiceId,
         private readonly string $controllerNamespace,
@@ -40,6 +47,12 @@ final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
 
             return;
         }
+
+        // Clear the marker as soon as we have SEEN the definition, not only on
+        // the success path below: the remaining early returns are legitimate
+        // "this app's router isn't service-resourced" cases, not wiring bugs,
+        // and flagging them would make the assertion cry wolf.
+        $container->getDefinition($this->loaderServiceId)->clearTag(self::UNCHAINED_TAG);
 
         if (!$container->hasParameter('router.resource')) {
             return;
