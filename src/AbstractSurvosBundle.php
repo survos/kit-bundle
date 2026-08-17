@@ -24,6 +24,8 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  *   src/Controller/→ controllers auto-registered; routes fully wired when
  *                    HasConfigurableRoutes is mixed in — the bundle only declares its
  *                    default prefix in configure(), see wireConfigurableRoutes()
+ *   src/Webhook/   → inbound webhook request parsers (see Survos\Kit\Webhook)
+ *   src/RemoteEvent/→ #[AsRemoteEventConsumer] classes behind those parsers
  *
  * AbstractBundle::getPath() returns the bundle root (parent of src/), so all
  * path helpers use $this->getPath() — no more dirname(__DIR__) in bundle classes.
@@ -113,6 +115,20 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         ];
         if (class_exists(\Symfony\UX\TwigComponent\Attribute\AsTwigComponent::class)) {
             $autoScan['Twig/Components'] = 'Twig\\Components\\';
+        }
+        // A webhook request parser is named by FQCN in framework.webhook.routing.*.service, so
+        // it must be a service — but unlike a controller it is never referenced by the router,
+        // and an unregistered one fails at container-compile time with "service not found"
+        // pointing at the app's config rather than at the bundle that forgot to register it.
+        // Guarded on the component: without it these classes have no parent class to extend.
+        if (class_exists(\Symfony\Component\Webhook\Client\AbstractRequestParser::class)) {
+            $autoScan['Webhook'] = 'Webhook\\';
+        }
+        // #[AsRemoteEventConsumer] is autoconfigured by FrameworkBundle into a
+        // `remote_event.consumer` tag, but only for classes that are services in the first
+        // place — hence scanning the directory rather than relying on the attribute alone.
+        if (interface_exists(\Symfony\Component\RemoteEvent\Consumer\ConsumerInterface::class)) {
+            $autoScan['RemoteEvent'] = 'RemoteEvent\\';
         }
 
         foreach ($autoScan as $path => $nsSuffix) {

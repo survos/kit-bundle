@@ -384,9 +384,25 @@ escape hatches.
 
 ---
 
+---
+
+## Webhooks
+
+`Survos\Kit\Webhook` holds the shared convention for webhooks between Survos services —
+signature verification (the half `symfony/webhook` does not ship), a base request parser, a
+sending transport that actually reads the response, and per-webhook Messenger transports.
+
+**[docs/webhooks.md](docs/webhooks.md)** — read this before adding a webhook anywhere. It covers
+naming, the secret contract, why the consumer must call the same applier the synchronous path
+uses, and why one webhook per unit of work is the wrong default.
+
+---
+
 ## Requirements
 
 - PHP 8.4+
 - Symfony 8.1+
 - `doctrine/orm` — optional, only needed when using `HasDoctrineEntities`
 - `symfony/asset-mapper` — optional, only needed for Stimulus / UX bundles
+- `symfony/webhook` + `symfony/remote-event` — optional, only needed for `Survos\Kit\Webhook`
+- `symfony/messenger` — optional, only needed for `RemoteEventTransportMiddleware`

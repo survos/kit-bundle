@@ -13,7 +13,15 @@
         "doctrine/orm": "^3.0",
         "symfony/asset-mapper": "^8.1",
         "symfony/framework-bundle": "^8.1",
-        "symfony/twig-bundle": "^8.1"
+        "symfony/messenger": "^8.1",
+        "symfony/remote-event": "^8.1",
+        "symfony/twig-bundle": "^8.1",
+        "symfony/webhook": "^8.1"
+    },
+    "suggest": {
+        "symfony/webhook": "For Survos\\Kit\\Webhook — the shared inbound-webhook convention (signature verification, /webhook/{name} matching).",
+        "symfony/remote-event": "For Survos\\Kit\\Webhook — RemoteEvent consumers behind the webhook endpoint.",
+        "symfony/messenger": "For Survos\\Kit\\Webhook\\RemoteEventTransportMiddleware — per-webhook Messenger transports."
     },
     "autoload": {
         "psr-4": {
