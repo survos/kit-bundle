@@ -43,6 +43,26 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  * installs the package but never adds it to config/bundles.php. The comment supplies the
  * bytes Flex greps for. Per-bundle markers are kept to a single line that points back here.
  *
+ * OVERRIDING loadExtension(): always chain to parent, FIRST.
+ *
+ *     public function loadExtension(array $c, ContainerConfigurator $container, ContainerBuilder $b): void
+ *     {
+ *         parent::loadExtension($c, $container, $b);   // <-- without this, nothing below is scanned
+ *         // ... bundle-specific wiring
+ *     }
+ *
+ * The directory scan described above lives in THIS class's loadExtension(). A subclass that
+ * overrides it without calling parent silently loses every convention at once: no commands, no
+ * controllers, no webhook parsers — while the bundle still boots and any service it registers
+ * explicitly keeps working. The failure therefore looks like "the bundle is broken" rather than
+ * "the scan never ran", and it is easy to misdiagnose as Flex not registering the bundle.
+ *
+ * Seen in the wild: survos/auth-bundle overrode loadExtension() to wire its AuthService,
+ * Authenticator and Twig components, chained parent::build() but not parent::loadExtension(), and
+ * so shipped a perfectly valid #[AsCommand('survos:user:create')] class that never appeared in
+ * bin/console. Symptom to remember — the bundle is present in config/bundles.php and boots, but
+ * src/Command/ is invisible.
+ *
  * Typical bundle:
  *
  *     #[RequiredBundle(SurvosKitBundle::class)]
