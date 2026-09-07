@@ -80,6 +80,17 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  * every call site. Do not advertise them with @method annotations here:
  * Symfony's DebugClassLoader treats inherited magic methods as APIs that each
  * concrete bundle should implement and emits false-positive deprecations.
+ *
+ * The three @method entries below are real: this base calls captureRouteConfig(),
+ * registerRouteLoader() and addRouteLoaderCompilerPass(), which are defined in the
+ * HasConfigurableRoutes trait that CONCRETE bundles mix in, not here. PHPStan cannot see
+ * through that and reported three undefined-method calls; annotating is the honest fix, since
+ * removing the calls would break every bundle using the trait and adding the trait here would
+ * force route config on bundles that have no routes.
+ *
+ * @method void captureRouteConfig(array $config)
+ * @method void registerRouteLoader(\Symfony\Component\DependencyInjection\ContainerBuilder $builder)
+ * @method void addRouteLoaderCompilerPass(\Symfony\Component\DependencyInjection\ContainerBuilder $container)
  */
 abstract class AbstractSurvosBundle extends AbstractBundle
 {
