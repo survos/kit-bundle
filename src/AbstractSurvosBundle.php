@@ -88,9 +88,9 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  * removing the calls would break every bundle using the trait and adding the trait here would
  * force route config on bundles that have no routes.
  *
- * @method void captureRouteConfig(array $config)
- * @method void registerRouteLoader(\Symfony\Component\DependencyInjection\ContainerBuilder $builder)
- * @method void addRouteLoaderCompilerPass(\Symfony\Component\DependencyInjection\ContainerBuilder $container)
+ * @phpstan-method void captureRouteConfig(array $config)
+ * @phpstan-method void registerRouteLoader(\Symfony\Component\DependencyInjection\ContainerBuilder $builder)
+ * @phpstan-method void addRouteLoaderCompilerPass(\Symfony\Component\DependencyInjection\ContainerBuilder $container)
  */
 abstract class AbstractSurvosBundle extends AbstractBundle
 {
