@@ -10,7 +10,7 @@ use Survos\Kit\Traits\HasConfigurableRoutes;
 use Symfony\Component\AssetMapper\AssetMapperInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
+use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 
 /**
  * Base class for Survos bundles. Extend this instead of AbstractBundle.
@@ -37,9 +37,7 @@ use Symfony\Component\DependencyInjection\Kernel\AbstractBundle;
  * "Symfony\Component\HttpKernel\Bundle\Bundle" or "...\AbstractBundle" — a raw
  * str_contains() on the file bytes, with no autoloading or reflection (see
  * vendor/symfony/flex/src/SymfonyBundle.php::isBundleClass()). Because our bundles
- * extend an intermediate base (and ultimately
- * Symfony\Component\DependencyInjection\Kernel\AbstractBundle, which Flex does not look
- * for), that string is otherwise absent and registration silently fails: `composer req`
+ * extend an intermediate base, that string is otherwise absent and registration silently fails: `composer req`
  * installs the package but never adds it to config/bundles.php. The comment supplies the
  * bytes Flex greps for. Per-bundle markers are kept to a single line that points back here.
  *
