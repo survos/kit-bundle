@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Survos\Kit;
 
 use Survos\Kit\Compiler\AssertRouteLoadersChainedPass;
+use Survos\Kit\Compiler\RemoteEventMiddlewarePass;
 use Survos\Kit\Twig\SurvosStimulusExtension;
 use Survos\Kit\Webhook\RemoteEventTransportMiddleware;
 use Survos\Kit\Webhook\VerifyingWebhookTransport;
@@ -22,6 +23,7 @@ class SurvosKitBundle extends AbstractBundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
+        $container->addCompilerPass(new RemoteEventMiddlewarePass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 10);
 
         // Priority 32: below the 64 used by every BundleRouteLoaderCompilerPass, so
         // all of them have had their chance to clear the marker tag before we look.
@@ -92,8 +94,7 @@ class SurvosKitBundle extends AbstractBundle
         if (($webhook['transports'] ?? []) !== [] && interface_exists(RequestParserInterface::class)) {
             $container->services()
                 ->set('survos_kit.webhook.remote_event_middleware', RemoteEventTransportMiddleware::class)
-                ->args([$webhook['transports']])
-                ->tag('messenger.middleware');
+                ->args([$webhook['transports']]);
         }
 
         if (($webhook['http_client'] ?? null) !== null && interface_exists(RequestParserInterface::class)) {
