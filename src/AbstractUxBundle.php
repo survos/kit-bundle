@@ -82,10 +82,11 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
      *   1. composer.json declares the "symfony-ux" keyword (Flex's
      *      PackageJsonSynchronizer::resolvePackageJson() returns null without it, so
      *      assets/package.json — controllers AND importmap — is never read).
-     *   2. assets/package.json "name" equals our derived asset namespace, so the
-     *      Stimulus identifier the app registers matches what templates reference. A
-     *      stray "-bundle" (e.g. "@survos/iiif-bundle" vs the derived "@survos/iiif")
-     *      registers the controller under a name nothing asks for.
+     *   2. the derived asset namespace equals "@" + the composer package name
+     *      ("@survos/iiif-bundle"), because Flex keys the app's controllers.json by
+     *      the composer package. A stripped name ("@survos/iiif") registers
+     *      controllers under an identifier nothing asks for.
+     *   3. assets/package.json "name" equals that same namespace.
      *
      * Skips silently when a file is missing/unparseable — we only throw on a provable
      * mismatch.
@@ -107,6 +108,20 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
                     $composerPath,
                 ));
             }
+
+            $composerNamespace = '@' . ($composer['name'] ?? '');
+            if (isset($composer['name']) && $composerNamespace !== $this->deriveAssetNamespace()) {
+                throw new \LogicException(sprintf(
+                    '%s: the asset namespace is "%s" but the composer package is "%s". The namespace must be '
+                    . '"%s" (keep the "-bundle" suffix): Flex keys the app\'s controllers.json by the composer '
+                    . 'package, so any other name silently never mounts. Remove the ASSET_PACKAGE const or the '
+                    . 'assetNamespace() override.',
+                    static::class,
+                    $this->deriveAssetNamespace(),
+                    $composer['name'],
+                    $composerNamespace,
+                ));
+            }
         }
 
         $packageJsonPath = $root . '/assets/package.json';
@@ -117,13 +132,11 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
                 throw new \LogicException(sprintf(
                     '%s: assets/package.json "name" is "%s" but the derived asset namespace is "%s". '
                     . 'These must match, or the app registers the Stimulus controllers under a name templates '
-                    . 'do not reference (the classic "-bundle" suffix drift). Rename the package to "%s", or set '
-                    . 'an ASSET_PACKAGE const on the bundle to make the derivation produce "%s".',
+                    . 'do not reference. Rename the package to "%s".',
                     static::class,
                     $actual,
                     $expected,
                     $expected,
-                    $actual,
                 ));
             }
         }
