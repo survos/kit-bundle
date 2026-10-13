@@ -21,4 +21,6 @@ final class BundleCompatibilityTest extends TestCase
     }
 }
 
-final class CompatibilityBundle extends AbstractSurvosBundle {}
+final class CompatibilityBundle extends AbstractSurvosBundle
+{
+}

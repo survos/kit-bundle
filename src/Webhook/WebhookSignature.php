@@ -43,7 +43,7 @@ final class WebhookSignature
         #[\SensitiveParameter] string $secret,
         string $algo = self::DEFAULT_ALGO,
     ): string {
-        return $algo . '=' . hash_hmac($algo, $name . $id . $body, $secret);
+        return $algo.'='.hash_hmac($algo, $name.$id.$body, $secret);
     }
 
     /** Constant-time compare. Never use === on a signature. */

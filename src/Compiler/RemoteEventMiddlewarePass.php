@@ -26,7 +26,7 @@ final class RemoteEventMiddlewarePass implements CompilerPassInterface
             return;
         }
         foreach (array_keys($container->findTaggedServiceIds('messenger.bus')) as $busId) {
-            $param = $busId . '.middleware';
+            $param = $busId.'.middleware';
             if (!$container->hasParameter($param)) {
                 continue;
             }
@@ -35,7 +35,7 @@ final class RemoteEventMiddlewarePass implements CompilerPassInterface
                 continue;
             }
             $at = array_search('send_message', array_column($middleware, 'id'), true);
-            array_splice($middleware, $at === false ? \count($middleware) : $at, 0, [['id' => self::SERVICE_ID, 'arguments' => []]]);
+            array_splice($middleware, false === $at ? \count($middleware) : $at, 0, [['id' => self::SERVICE_ID, 'arguments' => []]]);
             $container->setParameter($param, $middleware);
         }
     }

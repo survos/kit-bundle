@@ -29,7 +29,7 @@ trait HasDoctrineEntities
 {
     protected function entityNamespace(): string
     {
-        return (new \ReflectionClass($this))->getNamespaceName() . '\\Entity';
+        return (new \ReflectionClass($this))->getNamespaceName().'\\Entity';
     }
 
     protected function doctrineAlias(): string
@@ -46,7 +46,7 @@ trait HasDoctrineEntities
 
     protected function prependDoctrineMapping(ContainerBuilder $builder): void
     {
-        $dir = $this->getPath() . '/src/Entity';
+        $dir = $this->getPath().'/src/Entity';
         if (!is_dir($dir)) {
             return;
         }
@@ -56,10 +56,10 @@ trait HasDoctrineEntities
                 'mappings' => [
                     $this->doctrineMappingName() => [
                         'is_bundle' => false,
-                        'type'      => 'attribute',
-                        'dir'       => $dir,
-                        'prefix'    => $this->entityNamespace(),
-                        'alias'     => $this->doctrineAlias(),
+                        'type' => 'attribute',
+                        'dir' => $dir,
+                        'prefix' => $this->entityNamespace(),
+                        'alias' => $this->doctrineAlias(),
                     ],
                 ],
             ],

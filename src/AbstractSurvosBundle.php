@@ -96,7 +96,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
      * Twig namespace for templates/.
      * ''    → auto-derive: SurvosMyBundle → 'SurvosMy'
      * null  → skip
-     * 'Foo' → explicit
+     * 'Foo' → explicit.
      */
     protected function twigNamespace(): ?string
     {
@@ -107,7 +107,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
      * AssetMapper namespace for assets/.
      * ''            → auto-derive from ASSET_PACKAGE const or class name
      * null          → skip (default when ASSET_PACKAGE is not defined)
-     * '@survos/foo' → explicit
+     * '@survos/foo' → explicit.
      */
     protected function assetNamespace(): ?string
     {
@@ -129,12 +129,12 @@ abstract class AbstractSurvosBundle extends AbstractBundle
      */
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        $namespace = (new \ReflectionClass($this))->getNamespaceName() . '\\';
-        $srcDir    = $this->bundleRootPath() . '/src/';
+        $namespace = (new \ReflectionClass($this))->getNamespaceName().'\\';
+        $srcDir = $this->bundleRootPath().'/src/';
 
         // path under src/  =>  namespace suffix
         $autoScan = [
-            'Command'    => 'Command\\',
+            'Command' => 'Command\\',
             'Controller' => 'Controller\\',
             // NOTE: src/Menu is intentionally NOT auto-scanned — some menu subscribers are
             // conditionally registered (e.g. CommandBundleMenuSubscriber only when routes_enabled,
@@ -161,11 +161,11 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         }
 
         foreach ($autoScan as $path => $nsSuffix) {
-            $fullDir = $srcDir . $path . '/';
+            $fullDir = $srcDir.$path.'/';
             if (\is_dir($fullDir)) {
                 $container->services()
                     ->defaults()->autowire()->autoconfigure()
-                    ->load($namespace . $nsSuffix, $fullDir);
+                    ->load($namespace.$nsSuffix, $fullDir);
             }
         }
 
@@ -219,15 +219,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             return;
         }
 
-        throw new \LogicException(sprintf(
-            '%s uses HasConfigurableRoutes but its resolved config has no %s key. '
-            . 'Declare the route options in configure(), so apps can set the prefix and '
-            . 'switch the routes off: '
-            . '$this->addRouteOptions($definition->rootNode()->children(), \'/your-prefix\'); '
-            . 'Without it the prefix is always empty and routes_enabled: false does nothing.',
-            static::class,
-            implode(' or ', $missing),
-        ));
+        throw new \LogicException(sprintf('%s uses HasConfigurableRoutes but its resolved config has no %s key. Declare the route options in configure(), so apps can set the prefix and switch the routes off: $this->addRouteOptions($definition->rootNode()->children(), \'/your-prefix\'); Without it the prefix is always empty and routes_enabled: false does nothing.', static::class, implode(' or ', $missing)));
     }
 
     /**
@@ -249,7 +241,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         // class_uses() is neither inheritance- nor trait-recursive, and PHP ships
         // no helper that is, so walk both axes: the parent chain, and traits
         // composed into other traits.
-        $seen  = [];
+        $seen = [];
         $queue = [];
         for ($class = static::class; false !== $class; $class = get_parent_class($class)) {
             $queue = [...$queue, ...array_values(class_uses($class) ?: [])];
@@ -287,8 +279,8 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         }
 
         $ns = $this->twigNamespace();
-        if ($ns !== null && $ns !== '') {
-            $dir = $this->bundleRootPath() . '/templates';
+        if (null !== $ns && '' !== $ns) {
+            $dir = $this->bundleRootPath().'/templates';
             if (is_dir($dir)) {
                 $container->addCompilerPass(new BangTwigNamespacePass($ns, $dir));
             }
@@ -325,12 +317,12 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     protected function bundleRootPath(): string
     {
         $path = $this->getPath();
-        if (is_dir($path . '/src')) {
+        if (is_dir($path.'/src')) {
             return $path;
         }
 
         $classFile = (new \ReflectionClass($this))->getFileName();
-        if (false !== $classFile && basename(dirname($classFile)) === 'src') {
+        if (false !== $classFile && 'src' === basename(dirname($classFile))) {
             return dirname(dirname($classFile));
         }
 
@@ -340,15 +332,15 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     private function prependTwig(ContainerBuilder $builder): void
     {
         $rawNs = $this->twigNamespace();
-        if ($rawNs === null) {
+        if (null === $rawNs) {
             return;
         }
 
         $shortName = (new \ReflectionClass($this))->getShortName();
-        $isExplicit = $rawNs !== '';
+        $isExplicit = '' !== $rawNs;
         $ns = $isExplicit ? $rawNs : (preg_replace('/Bundle$/', '', $shortName) ?? $shortName);
 
-        $dir = $this->bundleRootPath() . '/templates';
+        $dir = $this->bundleRootPath().'/templates';
         if (!is_dir($dir)) {
             return;
         }
@@ -369,7 +361,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         // because it requires the SAME dir under a SECOND namespace, which the
         // "twig.paths" config node can't express (one namespace per path).
         if ($isExplicit && $builder->hasParameter('kernel.project_dir')) {
-            $overrideDir = $builder->getParameter('kernel.project_dir') . '/templates/bundles/' . $shortName;
+            $overrideDir = $builder->getParameter('kernel.project_dir').'/templates/bundles/'.$shortName;
             if (is_dir($overrideDir)) {
                 $paths = [$overrideDir => $ns] + $paths;
             }
@@ -381,7 +373,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
     private function prependAssets(ContainerBuilder $builder): void
     {
         $ns = $this->assetNamespace();
-        if ($ns === null) {
+        if (null === $ns) {
             return;
         }
 
@@ -389,11 +381,11 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             return;
         }
 
-        if ($ns === '') {
+        if ('' === $ns) {
             $ns = $this->deriveAssetNamespace();
         }
 
-        $dir = realpath($this->bundleRootPath() . '/assets');
+        $dir = realpath($this->bundleRootPath().'/assets');
         if (!$dir) {
             return;
         }
@@ -412,7 +404,7 @@ abstract class AbstractSurvosBundle extends AbstractBundle
             }
             $package = preg_replace('#^survos/#', '', $package) ?? $package;
 
-            return '@survos/' . trim($package, '/');
+            return '@survos/'.trim($package, '/');
         }
 
         // Keep the "Bundle" suffix: the asset namespace must equal the composer
@@ -422,8 +414,8 @@ abstract class AbstractSurvosBundle extends AbstractBundle
         // "@survos/iiif", which has no composer package and can't be resolved.
         $shortName = (new \ReflectionClass($this))->getShortName();
         $shortName = preg_replace('/^Survos/', '', $shortName) ?? $shortName;
-        $slug      = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $shortName));
+        $slug = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $shortName));
 
-        return '@survos/' . $slug;
+        return '@survos/'.$slug;
     }
 }

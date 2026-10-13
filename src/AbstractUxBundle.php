@@ -57,7 +57,7 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
      */
     private function contributeUxControllers(ContainerBuilder $container): void
     {
-        $packageJsonPath = $this->bundleRootPath() . '/assets/package.json';
+        $packageJsonPath = $this->bundleRootPath().'/assets/package.json';
         if (!is_file($packageJsonPath)) {
             return;
         }
@@ -95,49 +95,24 @@ abstract class AbstractUxBundle extends AbstractSurvosBundle implements Compiler
     {
         $root = $this->bundleRootPath();
 
-        $composerPath = $root . '/composer.json';
+        $composerPath = $root.'/composer.json';
         if (is_file($composerPath) && \is_array($composer = json_decode((string) file_get_contents($composerPath), true))) {
             if (!\in_array('symfony-ux', $composer['keywords'] ?? [], true)) {
-                throw new \LogicException(sprintf(
-                    '%s extends AbstractUxBundle but its composer.json (%s) is missing the "symfony-ux" keyword. '
-                    . 'Symfony Flex only registers a bundle\'s Stimulus controllers and importmap entries when '
-                    . '"symfony-ux" is in the top-level composer "keywords"; without it the bundle\'s frontend '
-                    . '(controllers, UX Twig components, importmap) silently never loads in consuming apps. '
-                    . 'Add it: "keywords": ["symfony-ux"].',
-                    static::class,
-                    $composerPath,
-                ));
+                throw new \LogicException(sprintf('%s extends AbstractUxBundle but its composer.json (%s) is missing the "symfony-ux" keyword. Symfony Flex only registers a bundle\'s Stimulus controllers and importmap entries when "symfony-ux" is in the top-level composer "keywords"; without it the bundle\'s frontend (controllers, UX Twig components, importmap) silently never loads in consuming apps. Add it: "keywords": ["symfony-ux"].', static::class, $composerPath));
             }
 
-            $composerNamespace = '@' . ($composer['name'] ?? '');
+            $composerNamespace = '@'.($composer['name'] ?? '');
             if (isset($composer['name']) && $composerNamespace !== $this->deriveAssetNamespace()) {
-                throw new \LogicException(sprintf(
-                    '%s: the asset namespace is "%s" but the composer package is "%s". The namespace must be '
-                    . '"%s" (keep the "-bundle" suffix): Flex keys the app\'s controllers.json by the composer '
-                    . 'package, so any other name silently never mounts. Remove the ASSET_PACKAGE const or the '
-                    . 'assetNamespace() override.',
-                    static::class,
-                    $this->deriveAssetNamespace(),
-                    $composer['name'],
-                    $composerNamespace,
-                ));
+                throw new \LogicException(sprintf('%s: the asset namespace is "%s" but the composer package is "%s". The namespace must be "%s" (keep the "-bundle" suffix): Flex keys the app\'s controllers.json by the composer package, so any other name silently never mounts. Remove the ASSET_PACKAGE const or the assetNamespace() override.', static::class, $this->deriveAssetNamespace(), $composer['name'], $composerNamespace));
             }
         }
 
-        $packageJsonPath = $root . '/assets/package.json';
+        $packageJsonPath = $root.'/assets/package.json';
         if (is_file($packageJsonPath) && \is_array($pkg = json_decode((string) file_get_contents($packageJsonPath), true))) {
             $expected = $this->deriveAssetNamespace();
-            $actual   = $pkg['name'] ?? null;
-            if ($actual !== null && $actual !== $expected) {
-                throw new \LogicException(sprintf(
-                    '%s: assets/package.json "name" is "%s" but the derived asset namespace is "%s". '
-                    . 'These must match, or the app registers the Stimulus controllers under a name templates '
-                    . 'do not reference. Rename the package to "%s".',
-                    static::class,
-                    $actual,
-                    $expected,
-                    $expected,
-                ));
+            $actual = $pkg['name'] ?? null;
+            if (null !== $actual && $actual !== $expected) {
+                throw new \LogicException(sprintf('%s: assets/package.json "name" is "%s" but the derived asset namespace is "%s". These must match, or the app registers the Stimulus controllers under a name templates do not reference. Rename the package to "%s".', static::class, $actual, $expected, $expected));
             }
         }
     }

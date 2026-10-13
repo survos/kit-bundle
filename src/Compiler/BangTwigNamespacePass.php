@@ -41,6 +41,6 @@ final class BangTwigNamespacePass implements CompilerPassInterface
         }
 
         $container->getDefinition('twig.loader.native_filesystem')
-            ->addMethodCall('addPath', [$this->dir, '!' . $this->namespace]);
+            ->addMethodCall('addPath', [$this->dir, '!'.$this->namespace]);
     }
 }

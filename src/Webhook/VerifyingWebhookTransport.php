@@ -113,12 +113,12 @@ final class VerifyingWebhookTransport implements TransportInterface
         );
 
         if ($status < 500) {
-            $this->logger->error($message . ' Not retrying — this is a configuration fault, not an outage.');
+            $this->logger->error($message.' Not retrying — this is a configuration fault, not an outage.');
 
             throw new UnrecoverableMessageHandlingException($message);
         }
 
-        $this->logger->warning($message . ' Retrying.');
+        $this->logger->warning($message.' Retrying.');
 
         throw new \RuntimeException($message);
     }

@@ -73,7 +73,7 @@ abstract class AbstractJsonWebhookParser extends AbstractRequestParser
      */
     protected function webhookPath(): string
     {
-        return '/webhook/' . $this->webhookName();
+        return '/webhook/'.$this->webhookName();
     }
 
     protected function signingAlgorithm(): string
@@ -100,37 +100,26 @@ abstract class AbstractJsonWebhookParser extends AbstractRequestParser
         return new ChainRequestMatcher([
             new MethodRequestMatcher(Request::METHOD_POST),
             // Anchored: `/webhook/lingua` must not also match `/webhook/lingua-admin`.
-            new PathRequestMatcher('^' . preg_quote($this->webhookPath(), '{}') . '$'),
+            new PathRequestMatcher('^'.preg_quote($this->webhookPath(), '{}').'$'),
             new IsJsonRequestMatcher(),
         ]);
     }
 
     final protected function doParse(Request $request, #[\SensitiveParameter] string $secret): ?RemoteEvent
     {
-        if ($secret === '') {
+        if ('' === $secret) {
             // 500, not 401: the fault is ours, and a sender must not treat this as "my
             // credentials are wrong" and stop retrying. Retrying is the correct response —
             // the delivery will succeed once the env var is set.
-            throw new RejectWebhookException(
-                Response::HTTP_INTERNAL_SERVER_ERROR,
-                \sprintf('No secret configured for webhook "%s"; refusing to accept unverified deliveries.', $this->webhookName()),
-            );
+            throw new RejectWebhookException(Response::HTTP_INTERNAL_SERVER_ERROR, \sprintf('No secret configured for webhook "%s"; refusing to accept unverified deliveries.', $this->webhookName()));
         }
 
         $name = (string) $request->headers->get(WebhookSignature::EVENT_HEADER, '');
         $id = (string) $request->headers->get(WebhookSignature::ID_HEADER, '');
         $signature = (string) $request->headers->get(WebhookSignature::SIGNATURE_HEADER, '');
 
-        if ($name === '' || $id === '' || $signature === '') {
-            throw new RejectWebhookException(
-                Response::HTTP_BAD_REQUEST,
-                \sprintf(
-                    'Missing one of %s / %s / %s.',
-                    WebhookSignature::EVENT_HEADER,
-                    WebhookSignature::ID_HEADER,
-                    WebhookSignature::SIGNATURE_HEADER,
-                ),
-            );
+        if ('' === $name || '' === $id || '' === $signature) {
+            throw new RejectWebhookException(Response::HTTP_BAD_REQUEST, \sprintf('Missing one of %s / %s / %s.', WebhookSignature::EVENT_HEADER, WebhookSignature::ID_HEADER, WebhookSignature::SIGNATURE_HEADER));
         }
 
         $body = $request->getContent();
@@ -141,7 +130,7 @@ abstract class AbstractJsonWebhookParser extends AbstractRequestParser
         }
 
         $accepted = $this->acceptedEvents();
-        if ($accepted !== null && !\in_array($name, $accepted, true)) {
+        if (null !== $accepted && !\in_array($name, $accepted, true)) {
             // Authenticated but uninteresting. Returning null makes WebhookController answer
             // with createRejectedResponse() — see that override below for why this must not
             // look like a delivery failure.

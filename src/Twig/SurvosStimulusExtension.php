@@ -38,9 +38,9 @@ final class SurvosStimulusExtension extends AbstractExtension
 {
     /**
      * @param array<string, list<string>> $controllers namespace => controller ids,
-     *                                                  e.g. ['@survos/iiif-bundle' => ['iiif-viewer', 'iiif-diva']]
-     * @param bool                         $debug       only validate (and throw) in debug;
-     *                                                  prod returns the reference unchecked
+     *                                                 e.g. ['@survos/iiif-bundle' => ['iiif-viewer', 'iiif-diva']]
+     * @param bool                        $debug       only validate (and throw) in debug;
+     *                                                 prod returns the reference unchecked
      */
     public function __construct(
         private readonly array $controllers = [],
@@ -72,33 +72,18 @@ final class SurvosStimulusExtension extends AbstractExtension
         // Validation is a dev-only check (like AbstractUxBundle's convention guard):
         // catch typos / missing bundles in dev & CI; never risk a prod page on render.
         if (!$this->debug) {
-            return $namespace . '/' . $controller;
+            return $namespace.'/'.$controller;
         }
 
         if (!isset($this->controllers[$namespace])) {
-            throw new \RuntimeException(sprintf(
-                'survos_stimulus(\'%s\', \'%s\'): no installed Survos UX bundle provides "%s". '
-                . 'Is the bundle installed and does its composer.json carry the "symfony-ux" keyword? '
-                . 'Installed UX namespaces: %s.',
-                $package,
-                $controller,
-                $namespace,
-                $this->controllers ? implode(', ', array_keys($this->controllers)) : '(none)',
-            ));
+            throw new \RuntimeException(sprintf('survos_stimulus(\'%s\', \'%s\'): no installed Survos UX bundle provides "%s". Is the bundle installed and does its composer.json carry the "symfony-ux" keyword? Installed UX namespaces: %s.', $package, $controller, $namespace, $this->controllers ? implode(', ', array_keys($this->controllers)) : '(none)'));
         }
 
         if (!\in_array($controller, $this->controllers[$namespace], true)) {
-            throw new \RuntimeException(sprintf(
-                'survos_stimulus(\'%s\', \'%s\'): controller "%s" does not exist in "%s". Available: %s.',
-                $package,
-                $controller,
-                $controller,
-                $namespace,
-                implode(', ', $this->controllers[$namespace]) ?: '(none)',
-            ));
+            throw new \RuntimeException(sprintf('survos_stimulus(\'%s\', \'%s\'): controller "%s" does not exist in "%s". Available: %s.', $package, $controller, $controller, $namespace, implode(', ', $this->controllers[$namespace]) ?: '(none)'));
         }
 
-        return $namespace . '/' . $controller;
+        return $namespace.'/'.$controller;
     }
 
     /**
@@ -127,6 +112,6 @@ final class SurvosStimulusExtension extends AbstractExtension
             $slug .= '-bundle';
         }
 
-        return '@survos/' . $slug;
+        return '@survos/'.$slug;
     }
 }

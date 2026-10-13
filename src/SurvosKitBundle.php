@@ -9,13 +9,14 @@ use Survos\Kit\Compiler\RemoteEventMiddlewarePass;
 use Survos\Kit\Twig\SurvosStimulusExtension;
 use Survos\Kit\Webhook\RemoteEventTransportMiddleware;
 use Survos\Kit\Webhook\VerifyingWebhookTransport;
+use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\DependencyInjection\Parameter;
-use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use Symfony\Component\Webhook\Client\RequestParserInterface;
+
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 class SurvosKitBundle extends AbstractBundle
@@ -31,7 +32,6 @@ class SurvosKitBundle extends AbstractBundle
             $container->addCompilerPass(new AssertRouteLoadersChainedPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 32);
         }
     }
-
 
     /**
      * Webhook wiring lives here, not in each app's services.yaml.

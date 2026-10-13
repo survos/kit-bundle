@@ -35,15 +35,6 @@ final class AssertRouteLoadersChainedPass implements CompilerPassInterface
             return;
         }
 
-        throw new \LogicException(sprintf(
-            'These bundle route loaders were registered but never chained into the router, '
-            . 'so their bundles serve no routes at all: %s. '
-            . 'Each one\'s bundle called registerRouteLoader() without ever adding its '
-            . 'BundleRouteLoaderCompilerPass. Fix by letting AbstractSurvosBundle drive the '
-            . 'wiring — extend it, and if you override build(), call parent::build($container). '
-            . 'A bundle that extends AbstractBundle directly must still call '
-            . '$this->addRouteLoaderCompilerPass($container) in build() itself.',
-            implode(', ', $unchained),
-        ));
+        throw new \LogicException(sprintf('These bundle route loaders were registered but never chained into the router, so their bundles serve no routes at all: %s. Each one\'s bundle called registerRouteLoader() without ever adding its BundleRouteLoaderCompilerPass. Fix by letting AbstractSurvosBundle drive the wiring — extend it, and if you override build(), call parent::build($container). A bundle that extends AbstractBundle directly must still call $this->addRouteLoaderCompilerPass($container) in build() itself.', implode(', ', $unchained)));
     }
 }

@@ -23,14 +23,15 @@ final class BundleRouteLoader
 {
     /** @param list<string> $enabledLocales */
     public function __construct(
-        private string          $originalResource,
-        private string          $controllerDir,
-        private string          $routePrefix,
+        private string $originalResource,
+        private string $controllerDir,
+        private string $routePrefix,
         private LoaderInterface $attributeDirectoryLoader,
-        private bool            $localePrefixed = false,
-        private array           $enabledLocales = [],
-        private string          $defaultLocale = 'en',
-    ) {}
+        private bool $localePrefixed = false,
+        private array $enabledLocales = [],
+        private string $defaultLocale = 'en',
+    ) {
+    }
 
     public function __invoke(LoaderInterface $loader, ?string $_env): RouteCollection
     {
@@ -47,11 +48,11 @@ final class BundleRouteLoader
         $prefix = $this->routePrefix;
         if ($this->localePrefixed && \count($this->enabledLocales) > 1) {
             $bundleRoutes->addPrefix(
-                '/{_locale}' . $prefix,
+                '/{_locale}'.$prefix,
                 ['_locale' => $this->defaultLocale],
                 ['_locale' => \implode('|', \array_map(\preg_quote(...), $this->enabledLocales))],
             );
-        } elseif ($prefix !== '') {
+        } elseif ('' !== $prefix) {
             $bundleRoutes->addPrefix($prefix);
         }
 

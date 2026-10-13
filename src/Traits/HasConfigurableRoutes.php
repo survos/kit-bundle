@@ -50,17 +50,17 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 trait HasConfigurableRoutes
 {
-    private bool   $routesEnabled  = true;
-    private string $routePrefix    = '';
-    private bool   $localePrefixed = false;
+    private bool $routesEnabled = true;
+    private string $routePrefix = '';
+    private bool $localePrefixed = false;
 
     /**
      * Idempotency guards. Each step is driven by AbstractSurvosBundle and may
      * ALSO be called explicitly by a bundle still on the old manual contract;
      * these make the second call a no-op instead of a duplicate registration.
      */
-    private bool $routeConfigCaptured    = false;
-    private bool $routeLoaderRegistered  = false;
+    private bool $routeConfigCaptured = false;
+    private bool $routeLoaderRegistered = false;
     private bool $routeCompilerPassAdded = false;
 
     public function routeConfigWasCaptured(): bool
@@ -78,15 +78,15 @@ trait HasConfigurableRoutes
         $children
             ->booleanNode('routes_enabled')->defaultValue($defaultEnabled)
                 ->info('Set false to manage this bundle\'s routes manually in your app. '
-                    . 'Bundles exposing sensitive routes (e.g. running console commands) should default this off.')
+                    .'Bundles exposing sensitive routes (e.g. running console commands) should default this off.')
             ->end()
             ->scalarNode('route_prefix')->defaultValue($defaultPrefix)
                 ->info('URL prefix applied to all routes from this bundle.')
             ->end()
             ->booleanNode('locale_prefix')->defaultValue($localePrefixDefault)
                 ->info('Prepend {_locale} (constrained to kernel.enabled_locales) to this bundle\'s route '
-                    . 'prefix, e.g. /{_locale}/f instead of /f -- for bundles whose routes are meant to be '
-                    . 'shared/bookmarked, so the URL itself carries the locale instead of a query param.')
+                    .'prefix, e.g. /{_locale}/f instead of /f -- for bundles whose routes are meant to be '
+                    .'shared/bookmarked, so the URL itself carries the locale instead of a query param.')
             ->end()
         ;
     }
@@ -108,8 +108,8 @@ trait HasConfigurableRoutes
      */
     protected function captureRouteConfig(array $config): void
     {
-        $routesEnabled  = (bool) ($config['routes_enabled'] ?? true);
-        $routePrefix    = (string) ($config['route_prefix'] ?? '');
+        $routesEnabled = (bool) ($config['routes_enabled'] ?? true);
+        $routePrefix = (string) ($config['route_prefix'] ?? '');
         $localePrefixed = (bool) ($config['locale_prefix'] ?? false);
 
         if ($this->routeConfigCaptured) {
@@ -120,28 +120,12 @@ trait HasConfigurableRoutes
                 return;
             }
 
-            throw new \LogicException(sprintf(
-                '%s::captureRouteConfig() was called twice with conflicting values: '
-                . 'first {routes_enabled: %s, route_prefix: "%s", locale_prefix: %s}, '
-                . 'then {routes_enabled: %s, route_prefix: "%s", locale_prefix: %s}. '
-                . 'AbstractSurvosBundle::loadExtension() already captures the bundle\'s own '
-                . 'config, so an explicit second call is only needed when it would pass '
-                . 'something different — and then the routes served depend on call order. '
-                . 'Delete the manual captureRouteConfig() call, and make configure() produce '
-                . 'the prefix you want in the "route_prefix" node.',
-                static::class,
-                $this->routesEnabled ? 'true' : 'false',
-                $this->routePrefix,
-                $this->localePrefixed ? 'true' : 'false',
-                $routesEnabled ? 'true' : 'false',
-                $routePrefix,
-                $localePrefixed ? 'true' : 'false',
-            ));
+            throw new \LogicException(sprintf('%s::captureRouteConfig() was called twice with conflicting values: first {routes_enabled: %s, route_prefix: "%s", locale_prefix: %s}, then {routes_enabled: %s, route_prefix: "%s", locale_prefix: %s}. AbstractSurvosBundle::loadExtension() already captures the bundle\'s own config, so an explicit second call is only needed when it would pass something different — and then the routes served depend on call order. Delete the manual captureRouteConfig() call, and make configure() produce the prefix you want in the "route_prefix" node.', static::class, $this->routesEnabled ? 'true' : 'false', $this->routePrefix, $this->localePrefixed ? 'true' : 'false', $routesEnabled ? 'true' : 'false', $routePrefix, $localePrefixed ? 'true' : 'false'));
         }
 
-        $this->routesEnabled       = $routesEnabled;
-        $this->routePrefix         = $routePrefix;
-        $this->localePrefixed      = $localePrefixed;
+        $this->routesEnabled = $routesEnabled;
+        $this->routePrefix = $routePrefix;
+        $this->localePrefixed = $localePrefixed;
         $this->routeConfigCaptured = true;
     }
 
@@ -162,9 +146,9 @@ trait HasConfigurableRoutes
         }
 
         $builder->register($this->routeLoaderServiceId(), BundleRouteLoader::class)
-            ->setArgument('$originalResource',         '')
-            ->setArgument('$controllerDir',            $controllerDir)
-            ->setArgument('$routePrefix',              $this->routePrefix)
+            ->setArgument('$originalResource', '')
+            ->setArgument('$controllerDir', $controllerDir)
+            ->setArgument('$routePrefix', $this->routePrefix)
             ->setArgument('$attributeDirectoryLoader', new Reference('routing.loader.attribute.directory'))
             // Unchained marker. BundleRouteLoaderCompilerPass removes this tag the
             // moment it sees the definition; anything still carrying it once every
@@ -173,9 +157,9 @@ trait HasConfigurableRoutes
             // step 4, whose routes then silently do not exist. See
             // AssertRouteLoadersChainedPass, which turns that into an exception.
             ->addTag(BundleRouteLoaderCompilerPass::UNCHAINED_TAG)
-            ->setArgument('$localePrefixed',           $this->localePrefixed)
-            ->setArgument('$enabledLocales',           '%kernel.enabled_locales%')
-            ->setArgument('$defaultLocale',             '%kernel.default_locale%')
+            ->setArgument('$localePrefixed', $this->localePrefixed)
+            ->setArgument('$enabledLocales', '%kernel.enabled_locales%')
+            ->setArgument('$defaultLocale', '%kernel.default_locale%')
             ->addTag('routing.route_loader');
     }
 
@@ -202,16 +186,16 @@ trait HasConfigurableRoutes
 
     protected function controllerDirectory(): string
     {
-        return \dirname((new \ReflectionClass($this))->getFileName()) . '/Controller/';
+        return \dirname((new \ReflectionClass($this))->getFileName()).'/Controller/';
     }
 
     protected function controllerNamespace(): string
     {
-        return (new \ReflectionClass($this))->getNamespaceName() . '\\Controller\\';
+        return (new \ReflectionClass($this))->getNamespaceName().'\\Controller\\';
     }
 
     protected function routeLoaderServiceId(): string
     {
-        return $this->getContainerExtension()->getAlias() . '.route_loader';
+        return $this->getContainerExtension()->getAlias().'.route_loader';
     }
 }

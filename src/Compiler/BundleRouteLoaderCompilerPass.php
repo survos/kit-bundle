@@ -38,7 +38,8 @@ final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
     public function __construct(
         private readonly string $loaderServiceId,
         private readonly string $controllerNamespace,
-    ) {}
+    ) {
+    }
 
     public function process(ContainerBuilder $container): void
     {
@@ -58,7 +59,7 @@ final class BundleRouteLoaderCompilerPass implements CompilerPassInterface
             return;
         }
 
-        $router  = $container->findDefinition('router.default');
+        $router = $container->findDefinition('router.default');
         $options = $router->getArgument(2);
         if (!\is_array($options) || ($options['resource_type'] ?? null) !== 'service') {
             return;
