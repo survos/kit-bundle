@@ -22,7 +22,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  *         // Override entityNamespace() only when entities are not in src/Entity.
  *     }
  *
- * Override doctrineAlias() when the default (class name minus 'Bundle') is wrong.
  * Override doctrineMappingName() when more than one entity set must be registered.
  */
 trait HasDoctrineEntities
@@ -30,13 +29,6 @@ trait HasDoctrineEntities
     protected function entityNamespace(): string
     {
         return (new \ReflectionClass($this))->getNamespaceName().'\\Entity';
-    }
-
-    protected function doctrineAlias(): string
-    {
-        $shortName = (new \ReflectionClass($this))->getShortName();
-
-        return preg_replace('/Bundle$/', '', $shortName) ?? $shortName;
     }
 
     protected function doctrineMappingName(): string
@@ -59,7 +51,6 @@ trait HasDoctrineEntities
                         'type' => 'attribute',
                         'dir' => $dir,
                         'prefix' => $this->entityNamespace(),
-                        'alias' => $this->doctrineAlias(),
                     ],
                 ],
             ],
